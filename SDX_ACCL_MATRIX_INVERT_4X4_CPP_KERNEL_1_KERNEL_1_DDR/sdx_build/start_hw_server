@@ -1,0 +1,3 @@
+source /home/applications/SDx/2019.1/settings64.sh
+
+sdx_debug_hw --xvc_pcie /dev/xvc_pub.u257 --hw_server &

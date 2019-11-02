@@ -1,0 +1,1 @@
+set_property -dict [list CONFIG.C_SLOT_0_TXN_CNTR_EN {0} CONFIG.C_SLOT_0_APC_EN {0} CONFIG.C_SLOT_0_AXI_W_SEL_TRIG {0} CONFIG.C_SLOT_0_AXI_R_SEL_TRIG {0} CONFIG.C_DATA_DEPTH {4096}] [get_bd_cells system_ila_0]
