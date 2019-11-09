@@ -170,8 +170,8 @@ int main(int argc, char** argv) {
   
     printf("-------------------------------------------------------------\n");
     printf("Create Test Data Set\n");
-    printf("Note DATA_IN_SIZE (Input Memory size in bytes  ) = %d (%x)\n",(GLOBAL_DATA_IN_SIZE_BYTES),(GLOBAL_DATA_IN_SIZE_BYTES));
-    printf("Note DATA_OUT_SIZE(Input Memory size in bytes  ) = %d (%x)\n",(GLOBAL_DATA_OUT_SIZE_BYTES),(GLOBAL_DATA_OUT_SIZE_BYTES));
+    printf("Note DATA_IN_SIZE (Input Memory size in bytes  ) = %ld (%lx)\n",(GLOBAL_DATA_IN_SIZE_BYTES),(GLOBAL_DATA_IN_SIZE_BYTES));
+    printf("Note DATA_OUT_SIZE(Input Memory size in bytes  ) = %ld (%lx)\n",(GLOBAL_DATA_OUT_SIZE_BYTES),(GLOBAL_DATA_OUT_SIZE_BYTES));
     cout << "Size of data_t = " << sizeof(data_t) <<  " Bytes" << endl;
     cout << "Size of srai_mem_conv = " << sizeof(srai_mem_conv) <<  " Bytes" << endl;
     cout << "True Size (in Bytes) of Input Data  = " << sizeof(srai_mem_conv)*GLOBAL_DATA_IN_SIZE<< endl;
