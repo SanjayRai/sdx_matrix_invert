@@ -28,7 +28,7 @@ include ./utils.mk
 DSA := $(call device2dsa, $(DEVICE))
 BUILD_DIR := ./_x.$(TARGET).$(DSA).$(DESIGN)
 
-CXX := $(XILINX_SDX)/bin/xcpp
+CXX := $(XILINX_VITIS)/bin/xcpp
 VPP := $(XILINX_VITIS)/bin/v++
 
 #Include Libraries
