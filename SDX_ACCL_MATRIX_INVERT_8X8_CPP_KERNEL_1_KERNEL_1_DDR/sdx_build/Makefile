@@ -17,6 +17,7 @@ help::
 
 
 DESIGN := sdx_cppKernel_top
+NUMBER_OF_KERNELS := 1
 TARGETS := hw
 TARGET := $(TARGETS)
 DEVICE := $(DEVICES)
@@ -28,7 +29,7 @@ DSA := $(call device2dsa, $(DEVICE))
 BUILD_DIR := ./_x.$(TARGET).$(DSA).$(DESIGN)
 
 CXX := $(XILINX_SDX)/bin/xcpp
-XOCC := $(XILINX_SDX)/bin/xocc
+VPP := $(XILINX_VITIS)/bin/v++
 
 #Include Libraries
 include ../../common_src/opencl/opencl.mk
@@ -79,10 +80,10 @@ build: $(BINARY_CONTAINERS)
 # Building kernel
 $(XCLBIN)/$(DESIGN).$(TARGET).$(DSA).xo:  $(KRNL_SRCS) $(KRNL_HDRS)
 	mkdir -p $(XCLBIN)
-	$(XOCC) $(CLFLAGS) --temp_dir $(BUILD_DIR) -c -k $(DESIGN) -I'$(<D)' -o'$@' --input_files $(KRNL_SRCS) 
+	$(VPP) $(CLFLAGS) --temp_dir $(BUILD_DIR) -c -k $(DESIGN) -I'$(<D)' -o'$@' --input_files $(KRNL_SRCS) 
 $(XCLBIN)/$(DESIGN).$(TARGET).$(DSA).xclbin: $(BINARY_CONTAINER_OBJS)
 	mkdir -p $(XCLBIN)
-	$(XOCC) $(CLFLAGS) --temp_dir $(BUILD_DIR) -l $(LDCLFLAGS) --nk $(DESIGN):1 -o'$@' $(+)
+	$(VPP) $(CLFLAGS) --temp_dir $(BUILD_DIR) -l $(LDCLFLAGS) --nk $(DESIGN):$(NUMBER_OF_KERNELS) -o'$@' $(+)
 
 # Building Host
 $(EXECUTABLE): $(HOST_SRCS) $(HOST_HDRS)

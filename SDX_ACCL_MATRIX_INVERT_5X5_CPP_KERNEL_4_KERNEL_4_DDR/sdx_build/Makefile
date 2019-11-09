@@ -17,6 +17,7 @@ help::
 
 
 DESIGN := sdx_cppKernel_top
+NUMBER_OF_KERNELS := 2
 TARGETS := hw
 TARGET := $(TARGETS)
 DEVICE := $(DEVICES)
@@ -27,8 +28,8 @@ include ./utils.mk
 DSA := $(call device2dsa, $(DEVICE))
 BUILD_DIR := ./_x.$(TARGET).$(DSA).$(DESIGN)
 
-CXX := $(XILINX_SDX)/bin/xcpp
-XOCC := $(XILINX_SDX)/bin/xocc
+CXX := $(XILINX_VITIS)/bin/xcpp
+VPP := $(XILINX_VITIS)/bin/v++
 
 #Include Libraries
 include ../../common_src/opencl/opencl.mk
@@ -52,8 +53,8 @@ LDFLAGS += $(opencl_LDFLAGS) -lrt -lstdc++
 
 # Kernel compiler global settings
 CLFLAGS += -t $(TARGET) --platform $(DEVICE) --save-temps 
-CLFLAGS += --sp sdx_cppKernel_top_1.m_axi_gmem:DDR[0]  --sp sdx_cppKernel_top_2.m_axi_gmem:DDR[1]  --sp sdx_cppKernel_top_3.m_axi_gmem:DDR[2]  --sp sdx_cppKernel_top_4.m_axi_gmem:DDR[3] 
-CLFLAGS += -I../../matrix_op_common_src/ -I../src/ -I../../common_src -I../../common_src/xcl2 --kernel_frequency 100
+CLFLAGS += --sp sdx_cppKernel_top_1.m_axi_gmem:DDR[0]  --sp sdx_cppKernel_top_2.m_axi_gmem:DDR[3]
+CLFLAGS += -I../../matrix_op_common_src/ -I../src/ -I../../common_src -I../../common_src/xcl2 --kernel_frequency 200
 
 
 
@@ -78,10 +79,10 @@ build: $(BINARY_CONTAINERS)
 # Building kernel
 $(XCLBIN)/$(DESIGN).$(TARGET).$(DSA).xo:  $(KRNL_SRCS) $(KRNL_HDRS)
 	mkdir -p $(XCLBIN)
-	$(XOCC) $(CLFLAGS) --temp_dir $(BUILD_DIR) -c -k $(DESIGN) -I'$(<D)' -o'$@' --input_files $(KRNL_SRCS) 
+	$(VPP) $(CLFLAGS) --temp_dir $(BUILD_DIR) -c -k $(DESIGN) -I'$(<D)' -o'$@' --input_files $(KRNL_SRCS) 
 $(XCLBIN)/$(DESIGN).$(TARGET).$(DSA).xclbin: $(BINARY_CONTAINER_OBJS)
 	mkdir -p $(XCLBIN)
-	$(XOCC) $(CLFLAGS) --temp_dir $(BUILD_DIR) -l $(LDCLFLAGS) --nk $(DESIGN):4 -o'$@' $(+)
+	$(VPP) $(CLFLAGS) --temp_dir $(BUILD_DIR) -l $(LDCLFLAGS) --nk $(DESIGN):$(NUMBER_OF_KERNELS) -o'$@' $(+)
 
 # Building Host
 $(EXECUTABLE): $(HOST_SRCS) $(HOST_HDRS)
