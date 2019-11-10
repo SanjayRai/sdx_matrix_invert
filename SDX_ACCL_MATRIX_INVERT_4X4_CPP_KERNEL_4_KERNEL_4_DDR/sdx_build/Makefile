@@ -17,7 +17,7 @@ help::
 
 
 DESIGN := sdx_cppKernel_top
-NUMBER_OF_KERNELS := 2
+NUMBER_OF_KERNELS := 4
 TARGETS := hw
 TARGET := $(TARGETS)
 DEVICE := $(DEVICES)
@@ -53,7 +53,7 @@ LDFLAGS += $(opencl_LDFLAGS) -lrt -lstdc++
 
 # Kernel compiler global settings
 CLFLAGS += -t $(TARGET) --platform $(DEVICE) --save-temps 
-CLFLAGS += --sp sdx_cppKernel_top_1.m_axi_gmem:DDR[0]  --sp sdx_cppKernel_top_2.m_axi_gmem:DDR[3]
+CLFLAGS += --sp sdx_cppKernel_top_1.m_axi_gmem:DDR[0]  --sp sdx_cppKernel_top_2.m_axi_gmem:DDR[1] --sp sdx_cppKernel_top_3.m_axi_gmem:DDR[2]  --sp sdx_cppKernel_top_3.m_axi_gmem:DDR[3]
 CLFLAGS += -I../../matrix_op_common_src/ -I../src/ -I../../common_src -I../../common_src/xcl2 --kernel_frequency 250
 
 
