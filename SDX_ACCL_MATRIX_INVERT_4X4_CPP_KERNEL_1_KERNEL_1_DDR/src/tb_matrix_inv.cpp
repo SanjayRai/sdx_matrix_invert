@@ -1,15 +1,17 @@
-#include<stdio.h>
+#include <stdio.h>
 #include "xcl2.hpp"
 #include "xclhal2.h"
 #include "unistd.h"
 #include <vector>
-#include<math.h>
+#include <math.h>
 #include <errno.h>
+#include <thread>
 
 #include <fstream>
 #include <string>
 #include <chrono>
 #include <cmath>
+#include "sdx_ker_thread.h" 
 #include "sdx_cppKernel_top.h" 
 #define PRINT_SAMPLE_OUT false
 #define ONE_GIG (1024UL*1024UL*1024UL)
@@ -145,14 +147,13 @@ int main(int argc, char** argv) {
 
     time_t t;
     srand((unsigned) time(&t));
-    double high_res_elapsed_time;
+    double high_res_elapsed_time = 0.0f;
     double high_res_elapsed_time_HW = 0.0f;
     double high_res_elapsed_time_SW = 0.0f;
     chrono::high_resolution_clock::time_point start_t;
     chrono::high_resolution_clock::time_point stop_t;
     chrono::duration<double> elapsed_hi_res;
-    unsigned int CHUNK_SIZE;
-  
+
   
     cout << "Srai_ DBG NUMBER_OF_DATA_SETS  =  " << NUMBER_OF_DATA_SETS << endl;
     cout << "Srai_ DBG GLOBAL_DATA_IN_SIZE  =  " << GLOBAL_DATA_IN_SIZE << endl;
@@ -163,7 +164,6 @@ int main(int argc, char** argv) {
     }
 
 
-    CHUNK_SIZE = (GLOBAL_DATA_IN_SIZE/NUM_CU); 
   
     vector<vector<srai_mem_conv, aligned_allocator<srai_mem_conv>> > a_in_ptr_cx(NUM_CU, vector<srai_mem_conv, aligned_allocator<srai_mem_conv>>(GLOBAL_DATA_IN_SIZE));
     vector<vector<srai_mem_conv, aligned_allocator<srai_mem_conv>> > y_out_ptr_cx(NUM_CU, vector<srai_mem_conv, aligned_allocator<srai_mem_conv>>(GLOBAL_DATA_IN_SIZE));
@@ -183,7 +183,7 @@ int main(int argc, char** argv) {
     cout << "Initializing Memory with InputA args\n";
     for (int i = 0 ; i < NUM_CU; i++) {
         gen_test_matrix(a_in_ptr_cx[i].data());
-        gen_zero_matrix(y_out_ptr_cx[i].data()); // Initialize results pointer with same data as input
+        //gen_zero_matrix(y_out_ptr_cx[i].data()); // Initialize results pointer with same data as input
     }
 
     //print_gen_test_matrix(a_in_ptr_c);
@@ -195,15 +195,31 @@ int main(int argc, char** argv) {
     cl::Device device = devices[0];
 
     OCL_CHECK(err, cl::Context context(device, NULL, NULL, NULL, &err));
-    //OCL_CHECK(err, cl::CommandQueue q(context, device, CL_QUEUE_PROFILING_ENABLE, &err));
-    //OCL_CHECK(err, cl::CommandQueue q(context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE|CL_QUEUE_PROFILING_ENABLE, &err));
-    OCL_CHECK(err, cl::CommandQueue q(context, device, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &err));
+
 
     auto fileBuf = xcl::read_binary_file(binaryFile);
     cl::Program::Binaries bins{{fileBuf.data(), fileBuf.size()}};
 
     devices.resize(1);
     OCL_CHECK(err, cl::Program program(context, devices, bins, NULL, &err));
+
+    std::string cu_id;
+    std::string krnl_name[NUM_CU];
+    vector<cl::Kernel> krnl_sdx_cppKernel_top(NUM_CU);
+    vector<cl::CommandQueue> q(NUM_CU);
+    vector<cl::Buffer> buffer_in1(NUM_CU);
+    vector<cl::Buffer> buffer_w(NUM_CU);
+
+    for (int i = 0 ; i < NUM_CU; i++) {
+        cu_id = std::to_string(i+1);
+        krnl_name[i] = "sdx_cppKernel_top:{sdx_cppKernel_top_" + cu_id + "}";
+        OCL_CHECK(err, krnl_sdx_cppKernel_top[i] = cl::Kernel(program,krnl_name[i].c_str(), &err));
+        OCL_CHECK(err, q[i] = cl::CommandQueue(context, device, CL_QUEUE_PROFILING_ENABLE, &err));
+        OCL_CHECK(err, buffer_in1[i] = cl::Buffer(context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY, (CHUNK_SIZE*sizeof(srai_mem_conv)), (a_in_ptr_cx[i].data()), &err));
+        OCL_CHECK(err, buffer_w[i]   = cl::Buffer(context,CL_MEM_USE_HOST_PTR | CL_MEM_WRITE_ONLY, (CHUNK_SIZE*sizeof(srai_mem_conv)), (y_out_ptr_cx[i].data()), &err));
+
+    }
+  
 
     cout << "__SRAI DBG :: GLOBAL_DATA_IN_SIZE_BYTES = " << GLOBAL_DATA_IN_SIZE_BYTES << endl;
     cout << "__SRAI DBG :: GLOBAL_DATA_IN_SIZE= " << GLOBAL_DATA_IN_SIZE << endl;
@@ -214,56 +230,21 @@ int main(int argc, char** argv) {
     cout << "__SRAI DBG :: Total Number of " << DIM << "x" << DIM << " Matrices : " <<  (NUMBER_OF_DATA_SETS*SDX_CU_LOCAL_SIZE) << endl;
 
 
-    vector<cl::Kernel> krnl_sdx_cppKernel_top(NUM_CU);
-    vector<cl::Buffer> buffer_in1(NUM_CU);
-    vector<cl::Buffer> buffer_w(NUM_CU);
-    std::string cu_id;
-    std::string krnl_name = "sdx_cppKernel_top";
-
-    for (int i = 0 ; i < NUM_CU; i++) {
-        cu_id = std::to_string(i + 1);
-        std::string krnl_name_full = krnl_name + ":{" + "sdx_cppKernel_top_" + cu_id + "}";
-        printf("Creating a kernel [%s] for CU(%d)\n", krnl_name_full.c_str(), i);
-        OCL_CHECK(err, krnl_sdx_cppKernel_top[i] = cl::Kernel(program,krnl_name_full.c_str(), &err));
-        
-        OCL_CHECK(err, buffer_in1[i] = cl::Buffer(context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_WRITE,  (CHUNK_SIZE*sizeof(srai_mem_conv)),  (a_in_ptr_cx[i].data()), &err));
-        OCL_CHECK(err, buffer_w[i]   = cl::Buffer(context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_WRITE, (CHUNK_SIZE*sizeof(srai_mem_conv)), (y_out_ptr_cx[i].data() ), &err));
-    }
-
-    for (int i = 0 ; i < NUM_CU; i++) {
-        OCL_CHECK(err, err = krnl_sdx_cppKernel_top[i].setArg(0,buffer_in1[i]));
-        OCL_CHECK(err, err = krnl_sdx_cppKernel_top[i].setArg(1,buffer_w[i]));
-        OCL_CHECK(err, err = krnl_sdx_cppKernel_top[i].setArg(2,(unsigned int)(NUMBER_OF_DATA_SETS/NUM_CU)));
-
-    }
-
+    thread sdxThread[NUM_CU];
     start_t = chrono::high_resolution_clock::now();
     for (int i = 0 ; i < NUM_CU; i++) {
-        OCL_CHECK(err, err = q.enqueueMigrateMemObjects({buffer_in1[i]}, 0 /* 0 means from host*/));
+        sdxThread[i] = thread(sdx_ker_thread, ref(buffer_in1[i]), ref(buffer_w[i]), ref(context), ref(q[i]), ref(krnl_sdx_cppKernel_top[i]));
     }
-    OCL_CHECK(err, err = q.finish());
-    stop_t = chrono::high_resolution_clock::now();
-    elapsed_hi_res = stop_t - start_t ;
-    high_res_elapsed_time_HW = elapsed_hi_res.count();
-    cout << " Input Data transfer time =  " <<  high_res_elapsed_time_HW << "s\n";
-    cout << "Input xfer THroughput =  " <<  (GLOBAL_DATA_OUT_SIZE_BYTES/high_res_elapsed_time_HW) << " Bytes/s\n";
 
-    start_t = chrono::high_resolution_clock::now();
     for (int i = 0 ; i < NUM_CU; i++) {
-        OCL_CHECK(err, err = q.enqueueTask(krnl_sdx_cppKernel_top[i]));
+        sdxThread[i].join();
     }
 
-    OCL_CHECK(err, err = q.finish());
-
+    
     stop_t = chrono::high_resolution_clock::now();
     elapsed_hi_res = stop_t - start_t ;
     high_res_elapsed_time_HW = elapsed_hi_res.count();
 
-    for (int i = 0 ; i < NUM_CU; i++) {
-        OCL_CHECK(err, err = q.enqueueMigrateMemObjects({buffer_w[i]}, CL_MIGRATE_MEM_OBJECT_HOST));
-    }
-
-    OCL_CHECK(err, err = q.finish());
 
     printf ("\n-----------------------------------------------------------------\n");
     printf (" ----- Kernel Execution Done Performing Software validation -------\n");
@@ -296,6 +277,7 @@ int main(int argc, char** argv) {
     for (unsigned int i = 0; i < 4; i++) {
         random_index[i]  = (uint32_t)(rand() % NUMBER_OF_DATA_SETS); 
     }
+    high_res_elapsed_time = 0.0f;
     for (unsigned int cu = 0 ; cu < NUM_CU; cu++) {
         for (unsigned int j = 0 ; j < NUMBER_OF_DATA_SETS/NUM_CU; j++) {
         curr_test_error = 0;
@@ -358,10 +340,9 @@ int main(int argc, char** argv) {
         }
     }
     high_res_elapsed_time_SW = high_res_elapsed_time;
-    printf ("\n");
-    cout << ".....................................................\n";
+    cout << "\n.....................................................\n";
     cout << "SW Execution time =  " <<  high_res_elapsed_time_SW << "s\n";
-    cout << "SW THroughput =  " <<  (GLOBAL_DATA_OUT_SIZE_BYTES/high_res_elapsed_time_SW) << " Bytes/s\n";
+    cout << "SW THroughput  =  " <<  (GLOBAL_DATA_OUT_SIZE_BYTES/high_res_elapsed_time_SW) << " Bytes/s\n";
     cout << "HW Execution time =  " <<  high_res_elapsed_time_HW << "s\n";
     cout << "HW THroughput =  " <<  (GLOBAL_DATA_OUT_SIZE_BYTES/high_res_elapsed_time_HW) << " Bytes/s\n";
     cout << "Gain (SW_time/HW_time)  =  " << (double)(high_res_elapsed_time_SW/high_res_elapsed_time_HW) << endl;
