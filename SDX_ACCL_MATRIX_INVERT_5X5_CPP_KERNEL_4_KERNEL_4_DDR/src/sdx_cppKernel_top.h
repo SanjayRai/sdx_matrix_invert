@@ -10,6 +10,7 @@
 #define NUMBER_OF_SDX_BUS_XFERS_PER_INPUT 2UL
 #define NUMBER_OF_SDX_BUS_XFERS_PER_OUTPUT 2UL
 #define NUM_CU 2
+#define CHUNK_SIZE (GLOBAL_DATA_IN_SIZE/NUM_CU)
 
 #define SDX_BUS_WIDTH 512UL
 #define sdx_data_t ap_uint<SDX_BUS_WIDTH>
@@ -34,8 +35,8 @@
 
 #define GLOBAL_DATA_IN_SIZE ((uint32_t)(SDX_CU_LOCAL_IN_SIZE*NUMBER_OF_DATA_SETS*NUMBER_OF_SDX_BUS_XFERS_PER_INPUT))
 #define GLOBAL_DATA_OUT_SIZE ((uint32_t)(SDX_CU_LOCAL_OUT_SIZE*NUMBER_OF_DATA_SETS*NUMBER_OF_SDX_BUS_XFERS_PER_OUTPUT))
-#define GLOBAL_DATA_IN_SIZE_BYTES ((uint64_t)(GLOBAL_DATA_IN_SIZE*sizeof(srai_mem_conv)))
-#define GLOBAL_DATA_OUT_SIZE_BYTES ((uint64_t)(GLOBAL_DATA_OUT_SIZE*sizeof(srai_mem_conv)))
+#define GLOBAL_DATA_IN_SIZE_BYTES ((uint32_t)(GLOBAL_DATA_IN_SIZE*sizeof(srai_mem_conv)))
+#define GLOBAL_DATA_OUT_SIZE_BYTES ((uint32_t)(GLOBAL_DATA_OUT_SIZE*sizeof(srai_mem_conv)))
 
 typedef union {
     uint32_t my_uint32;
