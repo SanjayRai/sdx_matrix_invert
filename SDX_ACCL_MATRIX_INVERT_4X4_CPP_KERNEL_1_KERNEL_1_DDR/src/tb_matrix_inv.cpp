@@ -167,6 +167,8 @@ int main(int argc, char** argv) {
   
     vector<vector<srai_mem_conv, aligned_allocator<srai_mem_conv>> > a_in_ptr_cx(NUM_CU, vector<srai_mem_conv, aligned_allocator<srai_mem_conv>>(GLOBAL_DATA_IN_SIZE));
     vector<vector<srai_mem_conv, aligned_allocator<srai_mem_conv>> > y_out_ptr_cx(NUM_CU, vector<srai_mem_conv, aligned_allocator<srai_mem_conv>>(GLOBAL_DATA_IN_SIZE));
+    //vector<vector<srai_mem_conv, aligned_allocator<srai_mem_conv>> > a_in_ptr_cx(GLOBAL_DATA_IN_SIZE);
+    //vector<vector<srai_mem_conv, aligned_allocator<srai_mem_conv>> > y_out_ptr_cx(GLOBAL_DATA_IN_SIZE);
 
   
     printf("-------------------------------------------------------------\n");
