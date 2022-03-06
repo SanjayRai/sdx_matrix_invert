@@ -57,7 +57,7 @@ LAUNCH_EMULATOR = $(PACKAGE_OUT)/launch_$(TARGET).sh
 RESULT_STRING = TEST PASSED
 
 VPP := v++
-VPP_PFLAGS := 
+VPP_FLAGS := 
 CMD_ARGS = $(BUILD_DIR)/$(DESIGN).xclbin
 SDCARD := sd_card
 
@@ -75,7 +75,6 @@ KRNL_SRCS = ../../matrix_op_common_src/kernel_WRAPPER.cpp ../../matrix_op_common
 CXXFLAGS += -fmessage-length=0
 CXXFLAGS += -Wsign-compare -Wno-unknown-pragmas
 LDFLAGS += $(opencl_LDFLAGS) -lrt -lstdc++ -lpthread 
-LDFLAGS += -lrt -lstdc++ 
 
 ifneq ($(HOST_ARCH), x86)
 	LDFLAGS += --sysroot=$(SYSROOT)
@@ -83,7 +82,7 @@ endif
 
 ############################## Setting up Kernel Variables ##############################
 # Kernel compiler global settings
-VPP_FLAGS += -t $(TARGET) --platform $(PLATFORM) --save-temps 
+VPP_FLAGS += -t $(TARGET) --platform $(PLATFORM) --save-temps --config $(DESIGN).cfg 
 ifneq ($(TARGET), hw)
 	VPP_FLAGS += -g
 endif
